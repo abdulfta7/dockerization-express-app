@@ -1,0 +1,43 @@
+name: Node Express CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Build Docker image
+        run: docker build -t express-hello-world:${{ github.sha }} .
+
+      - name: Save Docker image to tar archive
+        run: |
+          mkdir -p image-artifact
+          docker save express-hello-world:${{ github.sha }} -o image-artifact/express-hello-world.tar
+
+      - name: Upload Docker image as artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: docker-image
+          path: image-artifact/express-hello-world.tar
+          retention-days: 1
